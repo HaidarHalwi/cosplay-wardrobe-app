@@ -17,7 +17,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   }).format(product.price);
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || 'https://cosplay-wardrobe-app-w2mh.vercel.app/api';
+    process.env.NEXT_PUBLIC_BASE_URL || 'https://cosplay-wardrobe-app-w2mh.vercel.app';
 
   const imageUrl = product.imageUrl?.startsWith('http')
     ? product.imageUrl
