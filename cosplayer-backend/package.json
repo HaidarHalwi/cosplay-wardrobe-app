@@ -1,6 +1,7 @@
 {
   "name": "cosplayer-backend",
   "version": "1.0.0",
+  "type": "commonjs",
   "description": "API for Cosplayer Wardrobe Application",
   "main": "server.js",
   "scripts": {
