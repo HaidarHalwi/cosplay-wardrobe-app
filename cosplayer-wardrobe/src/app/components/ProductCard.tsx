@@ -8,6 +8,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+   console.log('IMAGE URL:', product.imageUrl);
   // Format mata uang Rupiah yang rapi
   const formatPrice = new Intl.NumberFormat('id-ID', {
     style: 'currency',
