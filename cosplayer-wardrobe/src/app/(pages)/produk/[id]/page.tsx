@@ -1,142 +1,159 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, use } from 'react'; // Tambahkan 'use' untuk params di Next.js terbaru
 import { Product } from '@/app/data/products';
 import Image from 'next/image';
-import { Star } from 'lucide-react';
+import { Star, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import ProductCard from '@/app/components/ProductCard';
 
-export default function ProductDetailPage() {
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Di Next.js terbaru, params harus di-unwrap menggunakan 'use'
+  const decodedParams = use(params);
+  const id = decodedParams.id;
+
   const [product, setProduct] = useState<Product | null>(null);
   const [otherProducts, setOtherProducts] = useState<Product[]>([]);
-  const [mainImage, setMainImage] = useState<string>('');
   const [activeTab, setActiveTab] = useState('deskripsi');
-  const params = useParams();
-  const { id } = params;
+  const [loading, setLoading] = useState(true);
 
-  // Mengambil Base URL dari environment variable yang sudah kamu buat
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     if (id && API_URL) {
-      const fetchProduct = async () => {
+      const fetchData = async () => {
+        setLoading(true);
         try {
-          // Menggunakan API_URL agar dinamis
+          // 1. Ambil Detail Produk
           const res = await fetch(`${API_URL}/products/${id}`);
           if (res.ok) {
             const data: Product = await res.json();
             setProduct(data);
-            if (data.imageUrl && data.imageUrl.length > 0) {
-              setMainImage(data.imageUrl[0]);
-            }
-          } else {
-            setProduct(null);
+          }
+
+          // 2. Ambil Saran Produk Lainnya
+          const resOthers = await fetch(`${API_URL}/products`);
+          if (resOthers.ok) {
+            const allData = await resOthers.json();
+            // Filter agar produk yang sedang dilihat tidak muncul di saran
+            setOtherProducts(allData.filter((p: Product) => p._id !== id).slice(0, 4));
           }
         } catch (error) {
-          console.error("Failed to fetch product details:", error);
-          setProduct(null);
+          console.error("Error fetching data:", error);
+        } finally {
+          setLoading(false);
         }
       };
       
-      const fetchOtherProducts = async () => {
-         try {
-            // Menggunakan API_URL agar dinamis
-            const res = await fetch(`${API_URL}/products`);
-            if(res.ok) {
-                const data = await res.json();
-                setOtherProducts(data.filter((p: Product) => p._id !== id).slice(0, 4));
-            }
-         } catch (error) {
-            console.error("Failed to fetch other products:", error)
-         }
-      };
-      
-      fetchProduct();
-      fetchOtherProducts();
+      fetchData();
     }
-  }, [id, API_URL]); // Menambahkan API_URL ke dependency array
+  }, [id, API_URL]);
 
-  if (!product) {
-    return <div className="text-center py-10">Loading product...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#E94A61] mb-4"></div>
+        <p>Sedang memuat kostum...</p>
+      </div>
+    );
   }
 
-  const formatPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price);
+  if (!product) {
+    return (
+      <div className="text-center py-20 text-white">
+        <h2 className="text-2xl font-bold">Yah, Produk Tidak Ditemukan</h2>
+        <Link href="/browse" className="text-[#E94A61] mt-4 block underline">Kembali ke Katalog</Link>
+      </div>
+    );
+  }
 
-  const ratingDistribution = { five: 15, four: 20, three: 0, two: 0, one: 0 };
-  const totalRatings = Object.values(ratingDistribution).reduce((a, b) => a + b, 0);
+  const formatPrice = new Intl.NumberFormat('id-ID', { 
+    style: 'currency', 
+    currency: 'IDR', 
+    minimumFractionDigits: 0 
+  }).format(product.price);
 
   return (
-    <div className="space-y-16">
-      <div className="bg-[#2D2D2D] p-8 rounded-2xl">
-        <h2 className="text-3xl font-bold mb-6">Detail Produk</h2>
+    <div className="space-y-12 text-white pb-20">
+      <Link href="/browse" className="flex items-center text-gray-400 hover:text-white transition-colors">
+        <ChevronLeft size={20} /> Kembali ke Browse
+      </Link>
+
+      <div className="bg-[#2D2D2D] p-6 md:p-10 rounded-3xl shadow-2xl">
         <div className="grid md:grid-cols-2 gap-12">
-          {/* Left Column: Product Image */}
-          <div>
-            <div className="relative w-full aspect-[3/2] rounded-2xl overflow-hidden mb-4">
-              {/* Menambahkan fallback jika mainImage kosong */}
-              <Image 
-                src={mainImage || (product.imageUrl && product.imageUrl[0]) || '/placeholder.png'} 
-                alt={product.name} 
-                layout="fill" 
-                objectFit="cover" 
-              />
-            </div>
+          {/* Sisi Kiri: Gambar Produk */}
+          <div className="relative aspect-[3/4] md:aspect-square rounded-2xl overflow-hidden bg-[#3C3C3C]">
+            <Image 
+              src={product.imageUrl || '/images/placeholder.png'} 
+              alt={product.name} 
+              fill 
+              style={{ objectFit: 'cover' }}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+            />
           </div>
           
-          {/* Right Column: Product Info */}
-          <div>
-            <div className="flex justify-between items-start mb-2">
-                <h1 className="text-4xl font-bold">{product.name}</h1>
-                <div className="bg-[#3C3C3C] p-3 rounded-xl text-center flex-shrink-0">
-                    <div className="flex items-center justify-center space-x-1">
-                        <Star className="text-yellow-400 fill-current" size={20} />
-                        <span className="text-lg font-bold">{product.rating}</span>
-                    </div>
-                    <div className="mt-2 space-y-1 w-24">
-                        {[5, 4, 3, 2, 1].map(star => (
-                            <div key={star} className="flex items-center gap-x-1">
-                                <span className="text-xs text-gray-400">{star}</span>
-                                <div className="w-full bg-gray-600 rounded-full h-1.5">
-                                    <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${(ratingDistribution[star === 5 ? 'five' : star === 4 ? 'four' : star === 3 ? 'three' : star === 2 ? 'two' : 'one'] / totalRatings) * 100}%` }}></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+          {/* Sisi Kanan: Informasi */}
+          <div className="flex flex-col">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[#E94A61] font-semibold text-sm tracking-widest uppercase">{product.series}</span>
+                <h1 className="text-4xl font-bold mt-1">{product.name}</h1>
+              </div>
+              <div className="flex items-center space-x-1 bg-[#3C3C3C] px-3 py-1 rounded-lg">
+                <Star className="text-yellow-400 fill-current" size={18} />
+                <span className="font-bold">{product.rating}</span>
+              </div>
             </div>
-            <p className="text-3xl font-semibold my-4">{formatPrice}</p>
-            <div className="flex space-x-2 mb-6">
-                <span className="bg-[#3C3C3C] text-white/80 text-sm font-semibold px-4 py-2 rounded-lg">XL</span>
-                <span className="bg-[#3C3C3C] text-white/80 text-sm font-semibold px-4 py-2 rounded-lg">L</span>
-                <span className="bg-[#E94A61]/20 text-[#E94A61] text-xs font-bold px-3 py-1 rounded-full flex items-center">LD=90-98</span>
+
+            <p className="text-3xl font-bold text-[#E94A61] my-6">{formatPrice}</p>
+
+            <div className="space-y-6">
+              <div className="flex space-x-2 border-b border-gray-700">
+                <button 
+                  onClick={() => setActiveTab('deskripsi')} 
+                  className={`py-3 px-6 font-bold transition-all ${activeTab === 'deskripsi' ? 'text-white border-b-2 border-[#E94A61]' : 'text-gray-500'}`}
+                >
+                  Deskripsi
+                </button>
+                <button 
+                  onClick={() => setActiveTab('ulasan')} 
+                  className={`py-3 px-6 font-bold transition-all ${activeTab === 'ulasan' ? 'text-white border-b-2 border-[#E94A61]' : 'text-gray-500'}`}
+                >
+                  Ulasan
+                </button>
+              </div>
+
+              <div className="text-gray-300 leading-relaxed min-h-[100px]">
+                {activeTab === 'deskripsi' ? (
+                  <p>{product.description}</p>
+                ) : (
+                  <p className="italic text-gray-500 text-sm">Belum ada ulasan untuk kostum ini.</p>
+                )}
+              </div>
+
+              <Link href={`/pesan/${product._id}`} className="block w-full bg-[#E94A61] hover:bg-[#c83d52] text-white text-center font-bold py-4 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]">
+                Pesan Sekarang
+              </Link>
             </div>
-            <div className="flex space-x-2 mb-6 border-b border-gray-700">
-              <button onClick={() => setActiveTab('deskripsi')} className={`py-2 px-4 font-semibold ${activeTab === 'deskripsi' ? 'text-white border-b-2 border-[#E94A61]' : 'text-gray-400'}`}>Deskripsi</button>
-              <button onClick={() => setActiveTab('ulasan')} className={`py-2 px-4 font-semibold ${activeTab === 'ulasan' ? 'text-white border-b-2 border-[#E94A61]' : 'text-gray-400'}`}>Ulasan</button>
-            </div>
-            <div className="min-h-[100px]">
-              {activeTab === 'deskripsi' ? (
-                <p className="text-gray-300">{product.description}</p>
-              ) : (
-                <p className="text-gray-400">Fitur ulasan akan segera hadir.</p>
-              )}
-            </div>
-            <Link href={`/pesan/${product._id}`} className="block w-full text-center bg-[#E94A61] hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-6">Pesan</Link>
           </div>
         </div>
       </div>
       
-      {/* Other Suggestions Section */}
-      <section>
-        <h2 className="text-3xl font-bold mb-6">Saran kostum lainnya</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {otherProducts.map(p => (
-            <ProductCard key={p._id} product={p} />
-          ))}
-        </div>
-      </section>
+      {/* Rekomendasi Kostum Lain */}
+      {otherProducts.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+            <span className="w-2 h-8 bg-[#E94A61] rounded-full"></span>
+            Saran kostum lainnya
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {otherProducts.map(p => (
+              <ProductCard key={p._id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
