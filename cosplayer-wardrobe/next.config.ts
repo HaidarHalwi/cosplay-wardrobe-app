@@ -2,11 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'down-id.img.susercontent.com',
-        pathname: '/**', // Mengizinkan semua folder di dalam domain tersebut
+        hostname: 'cosplay-wardrobe-app-w2mh.vercel.app',
+        pathname: '/images/**', // Mengizinkan semua folder di dalam domain tersebut
       },
     ],
   },

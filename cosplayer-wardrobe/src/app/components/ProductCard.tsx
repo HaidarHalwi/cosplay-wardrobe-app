@@ -22,14 +22,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <Link href={`/produk/${product._id}`} className="block bg-[#3C3C3C] rounded-2xl overflow-hidden group shadow-lg">
       <div className="relative w-full h-48 overflow-hidden">
-        <Image
-          src={imageUrl} 
-          alt={product.name}
-          fill
-          style={{ objectFit: 'cover' }} // TAMBAHKAN INI bro
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="group-hover:scale-105 transition-transform duration-300"
-        />
+        <img
+  src={imageUrl} 
+  alt={product.name}
+  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+/>
       </div>
       <div className="p-4">
         <h3 className="font-bold text-lg text-white truncate">{product.name}</h3>
