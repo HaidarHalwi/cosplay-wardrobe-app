@@ -42,6 +42,7 @@ export default async function BrowsePage() {
                           src={product.imageUrl || '/images/placeholder.png'} 
                           alt={product.name} 
                           fill 
+                          priority={true}
                           sizes="(max-width: 768px) 100vw, 33vw"
                           style={{ objectFit: 'cover' }} 
                           className="group-hover:scale-105 transition-transform duration-300"
